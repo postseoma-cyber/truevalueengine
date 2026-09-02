@@ -1,8 +1,7 @@
 -- TrueValueEngine bookmaker database - full install
--- Generated 2026-09-01. Apply to an empty database:  psql -U postgres -d tve -f tve-bookmaker-db.sql
--- Contains: schema (14 tables, 11 enums) + seed (74 brands, 94 operations)
---           + reference (12 regulators, 39 payment methods, 130 competitions)
---           + derived metrics (margin engine, best-price engine, frontend view)
+-- Apply to an empty database:  psql -U postgres -d tve -v ON_ERROR_STOP=1 -f tve-bookmaker-db.sql
+-- schema (26 objects) + seed (74 brands / 94 operations) + reference (12 regulators,
+-- 39 payment methods, 130 competitions) + derived metrics (margin + best-price engines)
 
 
 -- ============================================================
@@ -1033,7 +1032,8 @@ WHERE a.n_outcomes = COALESCE(e.required_outcomes, a.n_outcomes)
 -- Run weekly. Median is the headline figure; the mean is skewed by longshots.
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION refresh_operation_margin(p_from date, p_to date)
-RETURNS int LANGUAGE plpgsql AS $$
+RETURNS int LANGUAGE plpgsql
+SET search_path = tve, public AS $$
 DECLARE n int;
 BEGIN
   INSERT INTO operation_margin (operation_id, sport_id, competition_id, market_key,
@@ -1071,7 +1071,8 @@ END $$;
 -- The single most persuasive number an odds-comparison site can publish.
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION refresh_best_price_rate(p_from date, p_to date)
-RETURNS int LANGUAGE plpgsql AS $$
+RETURNS int LANGUAGE plpgsql
+SET search_path = tve, public AS $$
 DECLARE n int;
 BEGIN
   INSERT INTO operation_best_price_rate (operation_id, sport_id, market_key,
@@ -1126,7 +1127,8 @@ END $$;
 CREATE OR REPLACE FUNCTION bonus_effective_value(
   p_type bonus_type, p_amount numeric, p_wager_mult numeric,
   p_min_odds numeric, p_book_margin numeric DEFAULT 0.05
-) RETURNS numeric LANGUAGE plpgsql IMMUTABLE AS $$
+) RETURNS numeric LANGUAGE plpgsql IMMUTABLE
+SET search_path = tve, public AS $$
 DECLARE odds numeric := COALESCE(p_min_odds, 1.80);
         mult numeric := COALESCE(p_wager_mult, 0);
         edge numeric;
