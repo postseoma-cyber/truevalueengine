@@ -126,3 +126,107 @@ table.data tbody tr:hover { background: var(--bg); }
   margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line);
   font-size: 12px; color: var(--faint);
 }
+
+/* ================= THE BOARD =================
+   Palette taken from the approved design canvas: ink #F5F1E8 on #12100C,
+   gold #F5C518 for the thing to act on, green #37A06A for money in your
+   favour, rust #C2553A for money out of it. Numbers are always tabular so a
+   column of prices lines up and can be read down. */
+
+.pay-up   { color: #37A06A; font-weight: 600; }
+.pay-down { color: #C2553A; font-weight: 600; }
+.pay-flat { color: #7C7364; font-weight: 600; }
+.pay-big  { font-size: 26px; letter-spacing: -0.01em; }
+
+.tier {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.09em;
+  text-transform: uppercase; padding: 3px 8px; border-radius: 2px;
+  border: 1px solid #3A3328; white-space: nowrap;
+}
+.tier-model { color: #12100C; background: #F5C518; border-color: #F5C518; }
+.tier-cons  { color: #A79E8B; background: transparent; }
+
+.flag {
+  margin-left: 8px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.09em;
+  padding: 2px 6px; border-radius: 2px; vertical-align: 1px;
+}
+.flag-best  { color: #12100C; background: #F5C518; }
+.flag-worst { color: #C2553A; border: 1px solid #58322A; }
+
+table.board td.rank, table.board th.rank { width: 26px; color: #4A4335; text-align: right; }
+table.board tr.best  td { background: #1D1C13; }
+table.board tr.worst td { background: #1C1512; }
+
+.match-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 20px; padding: 18px 0 22px; border-bottom: 1px solid #2A251C; flex-wrap: wrap;
+}
+.match-head h1 {
+  margin: 0; font-size: 40px; font-weight: 800; letter-spacing: -0.022em; line-height: 1.05;
+}
+.match-head h1 .vs { color: #6B6252; font-weight: 500; }
+.match-head .meta {
+  margin-top: 10px; display: flex; gap: 12px; align-items: center;
+  flex-wrap: wrap; font-size: 13.5px; color: #A79E8B;
+}
+.match-head .meta .dot {
+  width: 3px; height: 3px; background: #4A4335; border-radius: 50%; display: inline-block;
+}
+
+.kicker {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.15em;
+  text-transform: uppercase; color: #7C7364;
+}
+
+.call { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 0; }
+.call-pick { padding: 4px 28px 4px 0; border-right: 1px solid #2A251C; }
+.call-name {
+  margin-top: 8px; font-size: 30px; font-weight: 700; letter-spacing: -0.015em; color: #F5F1E8;
+}
+.call-price { margin-top: 10px; display: flex; align-items: baseline; gap: 12px; }
+.call-price > .num { font-size: 34px; font-weight: 600; color: #F5C518; }
+.call-at { font-size: 13px; color: #A79E8B; }
+.call-say { margin: 16px 0 0; font-size: 14px; line-height: 1.62; color: #A79E8B; }
+.call-say strong { color: #F5F1E8; font-weight: 600; }
+
+.call-nums {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px 28px; padding: 4px 0 4px 28px;
+}
+.call-nums .big {
+  margin-top: 7px; font-size: 30px; font-weight: 600; letter-spacing: -0.02em; color: #F5F1E8;
+}
+.call-nums .big span { font-size: 18px; }
+.call-nums .cap { margin-top: 5px; font-size: 12px; line-height: 1.45; color: #7C7364; }
+
+.outcome { padding: 20px 0; border-top: 1px solid #2A251C; }
+.outcome:first-of-type { border-top: 0; padding-top: 4px; }
+.outcome-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 12px;
+}
+.outcome-head h3 {
+  margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.008em;
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+}
+.outcome-head h3 .mkt {
+  font-size: 11.5px; font-weight: 500; letter-spacing: 0.04em;
+  text-transform: uppercase; color: #7C7364;
+}
+
+.bestworst { margin-bottom: 12px; }
+.bw-row {
+  display: grid; grid-template-columns: 84px minmax(0, 1fr) 62px 78px;
+  gap: 10px; align-items: baseline; padding: 6px 0;
+}
+.bw-key { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #7C7364; }
+.bw-book { font-size: 15px; font-weight: 600; color: #F5F1E8; }
+.bw-price { font-size: 16px; color: #F5F1E8; text-align: right; }
+.bw-row .pay-big { font-size: 19px; text-align: right; }
+
+@media (max-width: 720px) {
+  .call { grid-template-columns: minmax(0, 1fr); }
+  .call-pick { border-right: 0; border-bottom: 1px solid #2A251C; padding: 0 0 18px; }
+  .call-nums { padding: 18px 0 0; }
+  .match-head h1 { font-size: 28px; }
+  .bw-row { grid-template-columns: 72px minmax(0, 1fr) 56px 66px; }
+}

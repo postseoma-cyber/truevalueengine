@@ -445,21 +445,102 @@ export function teamSlugs(competitionId: number) {
   );
 }
 
+/* ================================================================== *
+ * THE BOARD                                                          *
+ *                                                                    *
+ * One number carries this site: for a given outcome, how much more    *
+ * (or less) than fair is this bookmaker paying you?                   *
+ *                                                                    *
+ *     overpay = price x what_it_is_worth - 1                          *
+ *                                                                    *
+ * The engine writes it per book per outcome into tve.book_value, and  *
+ * records what it compared against: 'model' where our own model has   *
+ * been validated out of sample for that market, 'consensus' where it  *
+ * has not and the reference is the margin-free median of the          *
+ * sportsbooks quoting it. Both are true statements; they are not the  *
+ * same claim, and the page must never blur them.                      *
+ * ================================================================== */
+
+export type ValueRow = {
+  market_key: string;
+  point: string | null;
+  selection: string;
+  bookmaker_key: string;
+  price: string;
+  ref_prob: string;
+  ref_source: 'model' | 'consensus';
+  overpay: string;
+  hold: string | null;
+  n_books: number;
+};
+
 /**
- * Operators that are not plain sportsbooks. An exchange quotes a price GROSS of
- * commission, so it is not the same kind of number as a bookmaker's price: the
- * engine nets off the operator's published standard rate before choosing a best
- * price, and excludes exchanges that publish no rate (price.py). The table of
- * every book lists quotes as published, which is why a gross exchange price can
- * look better than the one we name best. This map is what lets the page say so
- * rather than appear to contradict itself.
+ * A book quoting far ABOVE the consensus is not a gift, it is a stale price or
+ * a palpable error, and a bookmaker voids those. We publish the underpay side
+ * without a cap -- a book paying 30% under the market is genuinely doing that,
+ * and saying so is the point -- but a suspiciously generous consensus-priced
+ * outlier is withheld rather than dangled in front of a reader who cannot
+ * actually take it. The model tier needs no such rule; price.py has already
+ * gated it at EDGE_CEILING.
  */
-export function operatorModels() {
-  return q<{ bookmaker_key: string; model: string; commission_rate: string | null }>(
-    `select odds_api_bookmaker_key as bookmaker_key,
-            model::text as model,
-            commission_rate::text as commission_rate
-       from operation
-      where odds_api_bookmaker_key is not null and model <> 'sportsbook'`,
+const SUSPECT = `not (ref_source = 'consensus' and overpay > 0.25)`;
+
+/** Every book on every outcome of one fixture, best payer first. */
+export function fixtureValue(eventId: string) {
+  return q<ValueRow>(
+    `select market_key, point::text, selection, bookmaker_key, price::text,
+            ref_prob::text, ref_source, overpay::text, hold::text, n_books
+       from book_value
+      where event_id = $1 and ${SUSPECT}
+      order by market_key, point nulls first, selection, book_value.overpay desc`,
+    [eventId],
+  );
+}
+
+/**
+ * The homepage board. One row per outcome -- the single best-paying book for it
+ * -- so the reader sees the bet, not thirty rows of the same bet.
+ */
+export function topEdges(withinHours = 72, limit = 40, source: 'model' | 'consensus' = 'model') {
+  return q<ValueRow & {
+    event_id: string; commence_time: string; home_team: string;
+    away_team: string; competition_id: number; worst_price: string;
+    worst_book: string; worst_overpay: string;
+  }>(
+    `select distinct on (v.event_id, v.market_key, v.point, v.selection)
+            v.market_key, v.point::text, v.selection, v.bookmaker_key, v.price::text,
+            v.ref_prob::text, v.ref_source, v.overpay::text, v.hold::text, v.n_books,
+            v.event_id, e.commence_time, e.home_team, e.away_team, e.competition_id,
+            w.price::text  as worst_price,
+            w.bookmaker_key as worst_book,
+            w.overpay::text as worst_overpay
+       from book_value v
+       join event_result e on e.event_id = v.event_id
+       join lateral (
+         select price, bookmaker_key, overpay from book_value x
+          where x.event_id = v.event_id and x.market_key = v.market_key
+            and x.selection = v.selection
+            and coalesce(x.point, -9999) = coalesce(v.point, -9999)
+          order by x.overpay asc limit 1
+       ) w on true
+      where v.ref_source = $3 and v.overpay > 0 and ${SUSPECT}
+        and e.commence_time between now() and now() + ($1 || ' hours')::interval
+      order by v.event_id, v.market_key, v.point, v.selection, v.overpay desc
+      limit $2`,
+    [withinHours, limit, source],
+  );
+}
+
+/** The one-line state of the board: how much we priced and how much carries value. */
+export async function boardSummary(withinHours = 72) {
+  return q1<{ fixtures: number; outcomes: number; with_value: number; books: number; as_of: string }>(
+    `select count(distinct v.event_id)::int as fixtures,
+            count(*)::int as outcomes,
+            count(*) filter (where v.overpay > 0)::int as with_value,
+            count(distinct v.bookmaker_key)::int as books,
+            max(v.computed_at) as as_of
+       from book_value v join event_result e on e.event_id = v.event_id
+      where e.commence_time between now() and now() + ($1 || ' hours')::interval`,
+    [withinHours],
   );
 }
