@@ -28,21 +28,22 @@ export default async function Home() {
   return (
     <div className="shell" style={{ paddingBottom: 48 }}>
       <header style={{ padding: '32px 0 24px', maxWidth: 820 }}>
-        <h1 style={{ fontSize: 34 }}>Every bookmaker&rsquo;s margin, measured. Then our own number.</h1>
+        <h1 style={{ fontSize: 34 }}>Where the bookmaker is paying you more than the bet is worth.</h1>
         <p style={{ marginTop: 12, fontSize: 15, maxWidth: 700 }}>
-          We compare <span className="m">{books}</span> bookmakers on every football fixture we cover,
-          strip each book&rsquo;s own margin out of its prices to get a fair price, and publish what our
-          model makes the same outcome. The model is published exactly as it computes — unblended —
-          and its record is on the site whether it is good or bad.
+          We work out what every outcome is really worth, then check{' '}
+          <span className="m">{books}</span> bookmakers against it. Where one is paying over the
+          odds, that is a bet. Where one is paying under, we name it and say by how much. The
+          model is published exactly as it computes — unblended — and its record is on the site
+          whether it is good or bad.
         </p>
         <div style={{ display: 'flex', gap: 16, marginTop: 18, flexWrap: 'wrap' }}>
-          <Link href="/today/" style={{ padding: '10px 16px', background: '#0f172a', color: '#fff', borderRadius: 5, fontSize: 13, fontWeight: 500 }}>
-            Today&rsquo;s selections
+          <Link href="/today/" style={{ padding: '10px 16px', background: 'var(--accent)', color: '#12100C', borderRadius: 5, fontSize: 13, fontWeight: 500 }}>
+            Today&rsquo;s best prices
           </Link>
-          <Link href="/margins/" style={{ padding: '10px 16px', border: '1px solid var(--line)', background: '#fff', borderRadius: 5, fontSize: 13 }}>
+          <Link href="/margins/" style={{ padding: '10px 16px', border: '1px solid var(--line)', background: 'var(--card)', borderRadius: 5, fontSize: 13 }}>
             Which books are cheapest
           </Link>
-          <Link href="/model/accuracy/" style={{ padding: '10px 16px', border: '1px solid var(--line)', background: '#fff', borderRadius: 5, fontSize: 13 }}>
+          <Link href="/model/accuracy/" style={{ padding: '10px 16px', border: '1px solid var(--line)', background: 'var(--card)', borderRadius: 5, fontSize: 13 }}>
             How the model scores
           </Link>
         </div>

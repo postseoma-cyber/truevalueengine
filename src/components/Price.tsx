@@ -54,10 +54,10 @@ export function OddsFormatSwitcher() {
           style={{
             padding: '6px 12px', borderRadius: 4, fontSize: 12, cursor: 'pointer',
             fontFamily: 'inherit',
-            border: f === o.v ? '1px solid #0f172a' : '1px solid var(--line)',
-            background: f === o.v ? '#0f172a' : '#fff',
-            color: f === o.v ? '#fff' : 'var(--body)',
-            fontWeight: f === o.v ? 500 : 400,
+            border: '1px solid ' + (f === o.v ? 'var(--accent)' : 'var(--rule)'),
+            background: f === o.v ? 'var(--accent)' : 'transparent',
+            color: f === o.v ? '#12100C' : 'var(--body)',
+            fontWeight: f === o.v ? 600 : 500,
           }}
         >
           {o.label}

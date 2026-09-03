@@ -11,13 +11,13 @@ import {
   type PriceRow, type FixtureRow, type AsFixtureRow,
 } from '@/lib/queries';
 import { Breadcrumb } from '@/components/Chrome';
-import { Card, Empty, Withheld, BestPriceCell, ModelCell, MarginBar, bookName, explain } from '@/components/Modules';
+import { Card, Empty, bookName } from '@/components/Modules';
 import { OddsFormatSwitcher, Price } from '@/components/Price';
 // `Tier` is already the T1-T4 corpus type from @/lib/tier, so the badge
 // component is aliased rather than shadowing a concept that means
 // something else entirely.
-import { Ladder, BestWorst, Tier as TierBadge, signed,
-         selectionLabel, marketLabel } from '@/components/Board';
+import { Ladder, Tier as TierBadge, signed } from '@/components/Board';
+import { buildLines, ValueTable, BookGrid, LineSay } from '@/components/Market';
 import { num, pct, signedPct, kickoff, day, formatOdds, fit, clamp } from '@/lib/fmt';
 
 export const revalidate = 900;
@@ -161,59 +161,34 @@ export default async function MatchupPage({ params }: { params: Promise<Params> 
   if (d.gone) notFound();
 
   const {
-    league, homeLabel, awayLabel, upcoming, lastResult, prices, books, margins,
-    meetings, homeForm, awayForm, tier,
+    league, homeLabel, awayLabel, upcoming, lastResult, meetings, homeForm, awayForm,
   } = d;
-
-  const h2h = prices.filter((r) => r.market === 'h2h');
-  const sel = (s: string) => h2h.find((r) => r.selection === s) ?? null;
-  const rows = [
-    { key: 'home', label: homeLabel, row: sel('home') },
-    { key: 'draw', label: 'Draw', row: sel('draw') },
-    { key: 'away', label: awayLabel, row: sel('away') },
-  ];
-
-  const totals = prices.filter((r) => r.market.startsWith('totals'));
-  const overround = bookOverround(books);
-  const bestOverround = bestPriceOverround(rows.map((r) => num(r.row?.best_price)));
 
   const kickoffText = upcoming ? kickoff(upcoming.commence_time) : null;
   const fx = upcoming ?? lastResult ?? null;
 
-  // THE BOARD. Every bookmaker on every outcome, and what each one is paying
-  // you against what that outcome is worth. Grouped one outcome at a time,
-  // because a reader wants a bet, not a thousand rows.
+  // THE BOARD. Every bookmaker on every outcome, split into markets and lines,
+  // because a reader wants a small table per market -- not a thousand rows.
   const value = fx ? await fixtureValue(fx.event_id) : [];
-  const groups = new Map<string, ValueRow[]>();
-  for (const v of value) {
-    const k = `${v.market_key}|${v.point ?? ''}|${v.selection}`;
-    const list = groups.get(k);
-    if (list) list.push(v); else groups.set(k, [v]);
-  }
-  const ORDER: Record<string, number> = { h2h: 0, totals: 1, spreads: 2 };
-  const outcomes = [...groups.entries()]
-    .map(([key, rs]) => ({
-      key,
-      market: rs[0].market_key,
-      point: rs[0].point,
-      selection: rs[0].selection,
-      source: rs[0].ref_source,
-      worth: num(rs[0].ref_prob) ?? 0,
-      best: num(rs[0].overpay) ?? 0,
-      rows: rs,
-    }))
-    .sort((a, b) =>
-      (ORDER[a.market] ?? 9) - (ORDER[b.market] ?? 9) ||
-      Number(a.point ?? 0) - Number(b.point ?? 0) ||
-      b.best - a.best);
+  const lines = buildLines(value, homeLabel, awayLabel);
+  const bookCount = new Set(value.map((v) => v.bookmaker_key)).size;
 
-  // The call is the best-paying outcome our own model stands behind. Where the
-  // model was gated -- it strayed too far from fifty bookmakers to be trusted
-  // -- there is no call, and the page says so rather than reaching for the
-  // consensus tier and quietly passing it off as the same claim.
-  const call = outcomes.filter((o) => o.source === 'model' && o.best > 0)
-                       .sort((a, b) => b.best - a.best)[0] ?? null;
-  const gated = h2h.some((r) => r.withheld_reason === 'edge_implausible');
+  // The headline bet is simply the largest overpay on the board. Nothing is
+  // withheld: where our model and fifty bookmakers disagree, the page prints
+  // both numbers side by side and says which is the likelier to be wrong.
+  const call = lines
+    .flatMap((l) => l.outcomes.map((o) => ({ line: l, o })))
+    .filter((x) => x.o.edge !== null && (x.o.edge as number) > 0)
+    .sort((a, b) => (b.o.edge as number) - (a.o.edge as number))[0] ?? null;
+  const worstOn = call
+    ? call.o.rows[call.o.rows.length - 1]
+    : null;
+  const worstEdge = worstOn ? (num(worstOn.price) ?? 0) * (call as NonNullable<typeof call>).o.ref - 1 : 0;
+  // How far our own number sits from the market's. Printed whenever it is wide,
+  // because a reader is owed the disagreement, not a filtered view of it.
+  const stretch = call && call.o.usesModel
+    ? (call.o.modelProb as number) - call.o.marketProb
+    : null;
 
   return (
     <div className="shell" style={{ paddingBottom: 48 }}>
@@ -235,108 +210,148 @@ export default async function MatchupPage({ params }: { params: Promise<Params> 
             <span>{league.leagueName}</span>
             {kickoffText && <><i className="dot" /><span className="num">{kickoffText}</span></>}
             <i className="dot" />
-            <span><span className="num">{value.length ? outcomes[0].rows[0].n_books : 0}</span> bookmakers compared</span>
+            <span><span className="num">{bookCount}</span> bookmakers compared</span>
           </div>
         </div>
         <OddsFormatSwitcher />
       </header>
 
       {call ? (
-        <Card title="THE ENGINE'S CALL" sub="The one outcome our model says is underpriced">
+        <Card
+          title="THE BIGGEST OVERPAY ON THIS MATCH"
+          sub={`${call.line.title} · ${call.o.label}`}
+          lead
+        >
           <div className="call">
             <div className="call-pick">
               <div className="kicker">BACK THIS</div>
-              <div className="call-name">
-                {selectionLabel(call.selection, homeLabel, awayLabel, call.point)}
-              </div>
+              <div className="call-name">{call.o.label}</div>
               <div className="call-price">
-                <span className="num"><Price value={num(call.rows[0].price) ?? 0} /></span>
-                <span className="call-at">best price at {bookName(call.rows[0].bookmaker_key)}</span>
+                <span className="num"><Price value={num(call.o.best!.price) ?? 0} /></span>
+                <span className="call-at">best price at {bookName(call.o.best!.bookmaker_key)}</span>
               </div>
               <p className="call-say">
-                We make this{' '}
-                <strong className="num">{(call.worth * 100).toFixed(1)}%</strong> to happen, so a
-                fair price would be <strong className="num">{(1 / call.worth).toFixed(2)}</strong>.{' '}
-                {bookName(call.rows[0].bookmaker_key)} is offering{' '}
-                <strong className="num"><Price value={num(call.rows[0].price) ?? 0} /></strong> — paying you{' '}
-                <strong className="pay-up num">{signed(call.best)}</strong> more than the bet is
-                worth. Every other book on this outcome is listed below, including the one paying
-                you least.
+                We make this <strong className="num">{(call.o.ref * 100).toFixed(1)}%</strong> to
+                happen, so a fair price would be{' '}
+                <strong className="num">{call.o.fair.toFixed(2)}</strong>.{' '}
+                {bookName(call.o.best!.bookmaker_key)} is offering{' '}
+                <strong className="num"><Price value={num(call.o.best!.price) ?? 0} /></strong> —
+                paying you <strong className="pay-up num">{signed(call.o.edge as number)}</strong>{' '}
+                more than the bet is worth.{worstOn && worstOn.bookmaker_key !== call.o.best!.bookmaker_key ? (
+                  <> The same bet at {bookName(worstOn.bookmaker_key)} pays{' '}
+                  <strong className="num"><Price value={num(worstOn.price) ?? 0} /></strong>, which
+                  is <strong className="pay-down num">{signed(worstEdge)}</strong> — the same wager,{' '}
+                  <strong className="num">
+                    {(((call.o.edge as number) - worstEdge) * 100).toFixed(1)}
+                  </strong> percentage points of your stake apart.</>
+                ) : null}
               </p>
             </div>
             <div className="call-nums">
               <div>
-                <div className="kicker">WHAT IT IS WORTH</div>
-                <div className="big num">{(call.worth * 100).toFixed(1)}<span>%</span></div>
-                <div className="cap">Our model&rsquo;s chance of it happening</div>
+                <div className="kicker">{call.o.usesModel ? 'OUR MODEL' : 'THE MARKET'}</div>
+                <div className="big num">{(call.o.ref * 100).toFixed(1)}<span>%</span></div>
+                <div className="cap">Chance of it happening</div>
               </div>
               <div>
                 <div className="kicker">FAIR PRICE</div>
-                <div className="big num">{(1 / call.worth).toFixed(2)}</div>
+                <div className="big num">{call.o.fair.toFixed(2)}</div>
                 <div className="cap">What you should be paid, with no margin</div>
               </div>
               <div>
                 <div className="kicker">BEST BOOK PAYS</div>
-                <div className="big num pay-up">{signed(call.best)}</div>
+                <div className="big num pay-up">{signed(call.o.edge as number)}</div>
                 <div className="cap">More than fair, per unit staked</div>
               </div>
               <div>
                 <div className="kicker">WORST BOOK PAYS</div>
-                <div className="big num pay-down">
-                  {signed(num(call.rows[call.rows.length - 1].overpay) ?? 0)}
-                </div>
+                <div className="big num pay-down">{signed(worstEdge)}</div>
                 <div className="cap">
-                  Less than fair, at {bookName(call.rows[call.rows.length - 1].bookmaker_key)}
+                  {worstOn ? <>Less than fair, at {bookName(worstOn.bookmaker_key)}</> : '—'}
                 </div>
               </div>
             </div>
           </div>
-          <p className="note">
-            Priced against our own model, which beats a league base rate out of sample on this
-            market. We publish it unblended, and we refuse to publish it at all when it strays
-            more than 15% from what fifty bookmakers think &mdash; a disagreement that large is
-            far likelier to be our error than theirs.
-          </p>
+          {stretch !== null && Math.abs(stretch) >= 0.05 ? (
+            <p className="note">
+              <span className="dot" />
+              Read this one with your eyes open. Our model makes it{' '}
+              <strong className="num">{((call.o.modelProb as number) * 100).toFixed(1)}%</strong>{' '}
+              where {call.o.rows[0].n_books} bookmakers, with their margin removed, make it{' '}
+              <strong className="num">{(call.o.marketProb * 100).toFixed(1)}%</strong>. A gap that
+              wide is far likelier to be our error than theirs. We publish the number unblended
+              anyway, and show you the market&rsquo;s beside it, so the disagreement is yours to
+              judge.
+            </p>
+          ) : null}
         </Card>
       ) : (
-        <Card title="THE ENGINE'S CALL" sub="No recommendation on this match">
-          <Withheld
-            what={gated ? 'Our model disagreed with the market too sharply to trust'
-                        : 'No outcome here is underpriced by our model'}
-            reason={gated ? 'edge_implausible' : null}
+        <Card title="THE BIGGEST OVERPAY ON THIS MATCH" sub="Nothing is overpriced here">
+          <Empty
+            head="Every book is pricing this match at or below what it is worth"
+            body="That is the normal state of a market. The full tables below still show what each outcome is worth and which bookmaker comes closest to paying it."
           />
-          <p className="note">
-            The bookmaker comparison below still stands: it needs no forecast to be true, only
-            the prices themselves.
-          </p>
+        </Card>
+      )}
+
+      {lines.length ? lines.map((line) => (
+        <Card
+          key={line.key}
+          title={line.title.toUpperCase()}
+          sub={`${line.bookCount} bookmakers`}
+        >
+          <ValueTable line={line} />
+          <LineSay line={line} />
+          <BookGrid line={line} limit={6} />
+        </Card>
+      )) : (
+        <Card title="ODDS">
+          <Empty head="No prices recorded" body="No bookmaker in our feed is currently pricing this match." />
         </Card>
       )}
 
       <Card
-        title="EVERY OUTCOME, EVERY BOOKMAKER"
-        sub={outcomes.length ? `${outcomes.length} outcomes priced across ${new Set(value.map((v) => v.bookmaker_key)).size} books` : undefined}
+        title="EVERY BOOKMAKER, OUTCOME BY OUTCOME"
+        sub={`${bookCount} books, with each one's own cut on each leg`}
       >
-        {outcomes.length ? (
-          outcomes.map((o) => (
-            <section className="outcome" key={o.key}>
-              <div className="outcome-head">
-                <h3>
-                  {selectionLabel(o.selection, homeLabel, awayLabel, o.point)}
-                  <span className="mkt">{marketLabel(o.market, o.point)}</span>
-                </h3>
-                <TierBadge source={o.source} />
-              </div>
-              <BestWorst rows={o.rows} worth={o.worth} />
-              <Ladder rows={o.rows} home={homeLabel} away={awayLabel} limit={6} />
-            </section>
-          ))
-        ) : (
-          <Empty head="No prices recorded" body="No bookmaker in our feed is currently pricing this match." />
+        {lines.length ? lines.map((line) => (
+          <div key={line.key}>
+            {line.outcomes.map((o) => (
+              <section className="outcome" key={line.key + o.selection}>
+                <div className="outcome-head">
+                  <h3>
+                    {o.label}
+                    <span className="mkt">{line.title}</span>
+                  </h3>
+                  <TierBadge source={o.usesModel ? 'model' : 'consensus'} />
+                </div>
+                <div className="worth">
+                  <span className="split">
+                    Our model <b className="num">
+                      {o.modelProb === null ? 'no price' : (o.modelProb * 100).toFixed(1) + '%'}
+                    </b>
+                  </span>
+                  <span className="split">
+                    Market consensus <b className="num">{(o.marketProb * 100).toFixed(1)}%</b>
+                  </span>
+                  <span className="split">
+                    Fair odds <b className="num">{o.fair.toFixed(2)}</b>
+                  </span>
+                </div>
+                <Ladder rows={o.rows} home={homeLabel} away={awayLabel} limit={8} />
+              </section>
+            ))}
+          </div>
+        )) : (
+          <Empty head="No prices recorded" body="Nothing to compare on this match yet." />
         )}
         <p className="note">
+          <span className="dot" />
           &ldquo;Their cut&rdquo; is how much of your stake that bookmaker keeps on that outcome,
           recovered from its own prices. It is not the same on every outcome: books take more for
           backing an outsider than a favourite, and how much more differs enormously between them.
+          An unusually generous single price is more often a stale quote than a gift &mdash; we
+          publish it as we found it, but check it at the book before you stake.
         </p>
       </Card>
 
@@ -387,7 +402,7 @@ function FormLine({ label, names, rows }: { label: string; names: string[]; rows
           const ga = us === 'home' ? r.away_score : r.home_score;
           const res = gf == null || ga == null ? '·' : gf > ga ? 'W' : gf === ga ? 'D' : 'L';
           const bg = res === 'W' ? 'var(--good-bg)' : res === 'L' ? 'var(--bad-bg)' : 'var(--line-soft)';
-          const fg = res === 'W' ? 'var(--good-fg)' : res === 'L' ? 'var(--bad-fg)' : '#475569';
+          const fg = res === 'W' ? 'var(--good-fg)' : res === 'L' ? 'var(--bad-fg)' : 'var(--body)';
           return (
             <span
               key={r.as_fixture_id}
@@ -408,58 +423,6 @@ function FormLine({ label, names, rows }: { label: string; names: string[]; rows
   );
 }
 
-type Grouped = { book: string; home: number | null; draw: number | null; away: number | null };
-
-/**
- * The feed names an outcome by the team, not by "home"/"away", and rows arrive
- * in whatever order the index gives. Match on the team name; never on position,
- * which silently swapped the two columns the first time this was written.
- */
-function groupBooks(
-  books: { bookmaker_key: string; outcome_name: string; price: string }[],
-  home: string,
-  away: string,
-) {
-  const norm = (s: string) => s.trim().toLowerCase();
-  const H = norm(home);
-  const A = norm(away);
-  const m = new Map<string, Grouped>();
-  for (const b of books) {
-    const g = m.get(b.bookmaker_key) ?? { book: b.bookmaker_key, home: null, draw: null, away: null };
-    const p = num(b.price);
-    const o = norm(b.outcome_name);
-    if (o === 'draw') g.draw = p;
-    else if (o === H) g.home = p;
-    else if (o === A) g.away = p;
-    else if (g.home === null) g.home = p;
-    else g.away = p;
-    m.set(b.bookmaker_key, g);
-  }
-  return { rows: [...m.values()], count: m.size };
-}
-
-/** Mean overround across books that priced all three outcomes. */
-function bookOverround(books: { bookmaker_key: string; outcome_name: string; price: string }[]) {
-  const byBook = new Map<string, number[]>();
-  for (const b of books) {
-    const p = num(b.price);
-    if (!p || p <= 1) continue;
-    const arr = byBook.get(b.bookmaker_key) ?? [];
-    arr.push(1 / p);
-    byBook.set(b.bookmaker_key, arr);
-  }
-  const sums = [...byBook.values()].filter((a) => a.length === 3).map((a) => a.reduce((x, y) => x + y, 0));
-  if (!sums.length) return null;
-  return sums.reduce((x, y) => x + y, 0) / sums.length;
-}
-
-function bestPriceOverround(prices: (number | null)[]) {
-  if (prices.some((p) => !p || p <= 1)) return null;
-  let sum = 0;
-  for (const p of prices) sum += 1 / (p as number);
-  return sum;
-}
-
 function jsonLd(home: string, away: string, league: string, fx: FixtureRow | null) {
   if (!fx) return { '@context': 'https://schema.org', '@type': 'WebPage', name: `${home} vs ${away}` };
   return {
@@ -475,17 +438,4 @@ function jsonLd(home: string, away: string, league: string, fx: FixtureRow | nul
       { '@type': 'SportsTeam', name: away },
     ],
   };
-}
-
-/**
- * How to label a row that is not a plain sportsbook. The distinction is not
- * cosmetic: a 2% margin at an exchange and a 2% margin at a bookmaker are not
- * the same claim, because the exchange takes its cut from the winnings instead.
- */
-function _removed_opTag(o: { model: string; commission_rate: string | null }): string {
-  if (o.model !== 'exchange') return o.model.replace(/_/g, ' ');
-  const cr = num(o.commission_rate);
-  return cr == null
-    ? 'exchange, commission not published'
-    : `exchange, ${pct(cr, 0)} commission`;
 }

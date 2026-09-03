@@ -153,7 +153,7 @@ export function MarginBar({ label, margin, worst }: { label: string; margin: num
       <div style={{ height: 8, borderRadius: 4, background: 'var(--line-soft)' }}>
         <div style={{ width: `${w}%`, height: 8, borderRadius: 4, background: lowest ? 'var(--accent)' : 'var(--rule)' }} />
       </div>
-      <span className="m" style={{ fontSize: 12, textAlign: 'right', color: '#475569' }}>{pct(margin, 2)}</span>
+      <span className="m" style={{ fontSize: 12, textAlign: 'right', color: 'var(--body)' }}>{pct(margin, 2)}</span>
     </div>
   );
 }

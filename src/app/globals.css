@@ -90,7 +90,7 @@ h3 { font-size: 15px; }
 
 .tag {
   display: inline-block; padding: 2px 7px; border-radius: 3px;
-  background: var(--line-soft); color: #475569; font-weight: 500;
+  background: var(--line-soft); color: var(--body); font-weight: 500;
 }
 .tag--good { background: var(--good-bg); color: var(--good-fg); }
 .tag--bad { background: var(--bad-bg); color: var(--bad-fg); }
@@ -113,7 +113,7 @@ table.data tbody tr:hover { background: var(--bg); }
   display: flex; align-items: flex-start; gap: 10px;
   padding: 14px 24px; background: var(--bg);
   border-top: 1px solid var(--line-soft);
-  font-size: 13px; color: #475569;
+  font-size: 13px; color: var(--body);
 }
 .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-top: 6px; flex: none; }
 
@@ -122,7 +122,7 @@ table.data tbody tr:hover { background: var(--bg); }
   gap: 8px; padding: 32px 16px; border: 1px dashed var(--rule);
   border-radius: 5px; background: var(--bg); text-align: center;
 }
-.empty b { color: #475569; font-weight: 500; font-size: 13px; }
+.empty b { color: var(--body); font-weight: 500; font-size: 13px; }
 .empty span { color: var(--faint); font-size: 12px; }
 
 .crumb { font-size: 12px; color: var(--muted); padding: 16px 0 0; }
@@ -246,4 +246,55 @@ table.board tr.worst td { background: #1F1613; }
   .call-nums { padding: 18px 0 0; }
   .match-head h1 { font-size: 26px; }
   .pay-big { font-size: 18px; }
+}
+
+
+/* ================= THE MARKET TABLES =================
+   The old site's four-column read, kept: bet, what it is worth, what it should
+   pay, what it does pay. Every column after the first is a number, right
+   aligned and tabular, so the eye can run down it. */
+
+table.data.value th, table.data.grid th { padding-top: 12px; padding-bottom: 10px; }
+table.data.value td { padding-top: 13px; padding-bottom: 13px; }
+table.data.value td:first-child, table.data.value th:first-child,
+table.data.grid  td:first-child, table.data.grid  th:first-child { padding-left: var(--gut); }
+table.data.value td:last-child, table.data.value th:last-child,
+table.data.grid  td:last-child, table.data.grid  th:last-child { padding-right: var(--gut); }
+
+td.bet { font-size: 15px; font-weight: 600; color: var(--ink); }
+.bestodds { font-size: 16px; font-weight: 600; color: var(--accent); }
+.bestbook { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+table.data td.dim, table.data th.dim { color: var(--muted); }
+
+.linesay {
+  margin: 0; padding: 14px var(--gut) 16px; font-size: 13.5px; line-height: 1.6;
+  color: var(--body); border-top: 1px solid var(--line-soft);
+}
+.linesay b { color: var(--ink); font-weight: 600; }
+.linesay b.pay-up { color: var(--good-fg); }
+.linesay b.pay-down { color: var(--bad-fg); }
+
+table.data.grid { border-top: 1px solid var(--line); }
+table.data.grid td.book { font-weight: 500; color: var(--ink); }
+table.data.grid tr.best td { background: #201C13; }
+table.data.grid td.cell-best  { color: var(--good-fg); font-weight: 600; }
+table.data.grid td.cell-worst { color: var(--bad-fg); }
+.gridfoot {
+  margin: 0; padding: 10px var(--gut) 16px; font-size: 12px; color: var(--muted);
+}
+
+/* The number columns must never be the first thing to wrap. */
+table.data.value th.right, table.data.grid th.right { white-space: nowrap; }
+td.bet { min-width: 132px; }
+
+/* On a phone the four columns that matter are the bet, what it is worth, what
+   the best book pays and the gap between them. Fair odds is 1 / the column
+   beside it and the market's own number is repeated in full further down the
+   page, so both give way rather than pushing the edge off the screen. */
+@media (max-width: 700px) {
+  td.bet { font-size: 14px; min-width: 108px; }
+  .bestodds { font-size: 15px; }
+  .col-fair, .col-market, .wide-only { display: none; }
+  table.data.value td, table.data.value th { padding-left: 10px; padding-right: 10px; }
+  table.data.value td:first-child, table.data.value th:first-child { padding-left: var(--gut); }
 }

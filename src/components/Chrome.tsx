@@ -11,7 +11,7 @@ const NAV = [
 
 export function Header() {
   return (
-    <header style={{ background: '#0f172a', borderBottom: '3px solid var(--accent)' }}>
+    <header style={{ background: 'var(--bg)', borderBottom: '1px solid var(--line)' }}>
       <div
         className="shell"
         style={{
@@ -19,15 +19,18 @@ export function Header() {
           gap: 24, minHeight: 64, flexWrap: 'wrap', paddingTop: 10, paddingBottom: 10,
         }}
       >
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ width: 26, height: 26, borderRadius: 5, background: 'var(--accent)', display: 'block' }} />
-          <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: '0.06em', color: '#fff' }}>
-            TRUE VALUE <span style={{ color: 'var(--accent)' }}>ENGINE</span>
-          </span>
+        <Link href="/" aria-label="True Value Engine" style={{ display: 'flex', alignItems: 'center' }}>
+          {/* The site's own mark, white-on-gold, straight off the live site --
+              not a redraw. It is already the right colours for this palette. */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- a plain
+              <img> keeps the standalone build free of the sharp dependency the
+              image optimiser needs, for one 25KB asset that never resizes. */}
+          <img src="/tve-logo.png" alt="True Value Engine" width={1625} height={316}
+               style={{ width: 208, height: 'auto', display: 'block' }} />
         </Link>
         <nav style={{ display: 'flex', alignItems: 'center', gap: 22, fontSize: 13, flexWrap: 'wrap' }}>
           {NAV.map((n) => (
-            <Link key={n.href} href={n.href} style={{ color: '#cbd5e1' }}>
+            <Link key={n.href} href={n.href} style={{ color: 'var(--body)' }}>
               {n.label}
             </Link>
           ))}
@@ -39,45 +42,45 @@ export function Header() {
 
 export function Footer({ asOf }: { asOf?: string }) {
   return (
-    <footer style={{ marginTop: 48, background: '#0f172a', color: '#94a3b8', fontSize: 12 }}>
+    <footer style={{ marginTop: 48, background: '#0E0C09', borderTop: '1px solid var(--line)', color: 'var(--muted)', fontSize: 12 }}>
       <div className="shell" style={{ paddingTop: 28, paddingBottom: 28 }}>
         <div style={{ display: 'flex', gap: 40, flexWrap: 'wrap', marginBottom: 22 }}>
           <div>
-            <div style={{ color: '#e2e8f0', fontWeight: 600, marginBottom: 8 }}>The engine</div>
+            <div style={{ color: 'var(--ink)', fontWeight: 600, marginBottom: 8 }}>The engine</div>
             <FLink href="/how-the-engine-works/">How the engine works</FLink>
             <FLink href="/model/accuracy/">Model accuracy</FLink>
             <FLink href="/model/record/">Published record</FLink>
             <FLink href="/margins/">Bookmaker margins</FLink>
           </div>
           <div>
-            <div style={{ color: '#e2e8f0', fontWeight: 600, marginBottom: 8 }}>Football</div>
+            <div style={{ color: 'var(--ink)', fontWeight: 600, marginBottom: 8 }}>Football</div>
             <FLink href="/today/">Today</FLink>
             <FLink href="/this-week/">This week</FLink>
             <FLink href="/country/">All countries</FLink>
           </div>
           <div style={{ maxWidth: 380 }}>
-            <div style={{ color: '#e2e8f0', fontWeight: 600, marginBottom: 8 }}>Countries</div>
+            <div style={{ color: 'var(--ink)', fontWeight: 600, marginBottom: 8 }}>Countries</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px' }}>
               {COUNTRIES.map((c) => (
-                <Link key={c.slug} href={`/${c.slug}/`} style={{ color: '#94a3b8' }}>
+                <Link key={c.slug} href={`/${c.slug}/`} style={{ color: 'var(--muted)' }}>
                   {c.name}
                 </Link>
               ))}
             </div>
           </div>
         </div>
-        <div style={{ borderTop: '1px solid #1e293b', paddingTop: 16, lineHeight: 1.7 }}>
+        <div style={{ borderTop: '1px solid var(--line)', paddingTop: 16, lineHeight: 1.7 }}>
           <div>
             Odds change constantly. Always confirm the price at the bookmaker before betting.
-            18+ — <Link href="/responsible-gambling/" style={{ color: '#cbd5e1' }}>gamble responsibly</Link>.
+            18+ — <Link href="/responsible-gambling/" style={{ color: 'var(--accent)' }}>gamble responsibly</Link>.
           </div>
           {asOf ? <div className="m">Prices last checked {asOf}.</div> : null}
           <div style={{ marginTop: 8 }}>
-            <Link href="/privacy/" style={{ color: '#94a3b8' }}>Privacy</Link>
-            <span style={{ margin: '0 8px', color: '#334155' }}>·</span>
-            <Link href="/terms/" style={{ color: '#94a3b8' }}>Terms</Link>
-            <span style={{ margin: '0 8px', color: '#334155' }}>·</span>
-            <Link href="/responsible-gambling/" style={{ color: '#94a3b8' }}>Responsible gambling</Link>
+            <Link href="/privacy/" style={{ color: 'var(--muted)' }}>Privacy</Link>
+            <span style={{ margin: '0 8px', color: 'var(--rule)' }}>·</span>
+            <Link href="/terms/" style={{ color: 'var(--muted)' }}>Terms</Link>
+            <span style={{ margin: '0 8px', color: 'var(--rule)' }}>·</span>
+            <Link href="/responsible-gambling/" style={{ color: 'var(--muted)' }}>Responsible gambling</Link>
           </div>
         </div>
       </div>
@@ -88,7 +91,7 @@ export function Footer({ asOf }: { asOf?: string }) {
 function FLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 5 }}>
-      <Link href={href} style={{ color: '#94a3b8' }}>{children}</Link>
+      <Link href={href} style={{ color: 'var(--muted)' }}>{children}</Link>
     </div>
   );
 }

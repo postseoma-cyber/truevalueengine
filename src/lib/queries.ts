@@ -467,32 +467,36 @@ export type ValueRow = {
   selection: string;
   bookmaker_key: string;
   price: string;
+  /** The margin-free consensus of the sportsbooks quoting this leg (Shin, median). */
   ref_prob: string;
+  /** 'model' means we ALSO hold a model number for this leg, not that we used it. */
   ref_source: 'model' | 'consensus';
+  /** price x ref_prob - 1, against the consensus. */
   overpay: string;
+  /** Our own model's probability for this leg, where the model prices this market. */
+  model_prob: string | null;
+  /** price x model_prob - 1. Published as it comes out of the model, unblended. */
+  model_overpay: string | null;
   hold: string | null;
   n_books: number;
 };
 
 /**
- * A book quoting far ABOVE the consensus is not a gift, it is a stale price or
- * a palpable error, and a bookmaker voids those. We publish the underpay side
- * without a cap -- a book paying 30% under the market is genuinely doing that,
- * and saying so is the point -- but a suspiciously generous consensus-priced
- * outlier is withheld rather than dangled in front of a reader who cannot
- * actually take it. The model tier needs no such rule; price.py has already
- * gated it at EDGE_CEILING.
+ * Nothing is filtered here. An outlier price is usually a stale quote rather
+ * than a gift, and the page says so in plain words -- but hiding a row is
+ * indistinguishable, to a reader, from not having the data. Everything the
+ * engine computed is published; the caveats are written next to it.
  */
-const SUSPECT = `not (ref_source = 'consensus' and overpay > 0.25)`;
 
 /** Every book on every outcome of one fixture, best payer first. */
 export function fixtureValue(eventId: string) {
   return q<ValueRow>(
     `select market_key, point::text, selection, bookmaker_key, price::text,
-            ref_prob::text, ref_source, overpay::text, hold::text, n_books
+            ref_prob::text, ref_source, overpay::text,
+            model_prob::text, model_overpay::text, hold::text, n_books
        from book_value
-      where event_id = $1 and ${SUSPECT}
-      order by market_key, point nulls first, selection, book_value.overpay desc`,
+      where event_id = $1
+      order by market_key, point nulls first, selection, price desc`,
     [eventId],
   );
 }
@@ -509,7 +513,8 @@ export function topEdges(withinHours = 72, limit = 40, source: 'model' | 'consen
   }>(
     `select distinct on (v.event_id, v.market_key, v.point, v.selection)
             v.market_key, v.point::text, v.selection, v.bookmaker_key, v.price::text,
-            v.ref_prob::text, v.ref_source, v.overpay::text, v.hold::text, v.n_books,
+            v.ref_prob::text, v.ref_source, v.overpay::text,
+            v.model_prob::text, v.model_overpay::text, v.hold::text, v.n_books,
             v.event_id, e.commence_time, e.home_team, e.away_team, e.competition_id,
             w.price::text  as worst_price,
             w.bookmaker_key as worst_book,
@@ -521,11 +526,11 @@ export function topEdges(withinHours = 72, limit = 40, source: 'model' | 'consen
           where x.event_id = v.event_id and x.market_key = v.market_key
             and x.selection = v.selection
             and coalesce(x.point, -9999) = coalesce(v.point, -9999)
-          order by x.overpay asc limit 1
+          order by x.price asc limit 1
        ) w on true
-      where v.ref_source = $3 and v.overpay > 0 and ${SUSPECT}
+      where v.ref_source = $3 and coalesce(v.model_overpay, v.overpay) > 0
         and e.commence_time between now() and now() + ($1 || ' hours')::interval
-      order by v.event_id, v.market_key, v.point, v.selection, v.overpay desc
+      order by v.event_id, v.market_key, v.point, v.selection, v.price desc
       limit $2`,
     [withinHours, limit, source],
   );
