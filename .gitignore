@@ -1,0 +1,9 @@
+node_modules/
+.next/
+out/
+shots/
+*.log
+# Never commit .env.local: it holds the Postgres password for tve-prod-01.
+.env
+.env.*
+!.env.example
