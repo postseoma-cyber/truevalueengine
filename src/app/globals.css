@@ -1,27 +1,34 @@
-/* Design tokens taken from the approved matchup wireframes (Direction A).
-   Slate + a single yellow accent; IBM Plex Sans with tabular monospace figures
-   for every number, so columns of odds line up. */
+/* Design tokens, taken from the approved design canvas (True Value Engine
+   Redesign, artboard "Matchup page -- desktop").
+   THE CANVAS IS DARK. An earlier version of this file carried a light slate
+   palette and claimed the same source; it did not come from there, and every
+   later change built on top of that mistake. Ink on near-black, one gold accent
+   for the thing you act on, green for money in your favour and rust for money
+   out of it. Archivo for text, Spline Sans Mono for every figure so columns of
+   odds line up and can be read down. */
 :root {
-  --ink: #0f172a;
-  --body: #334155;
-  --muted: #64748b;
-  --faint: #94a3b8;
-  --line: #e2e8f0;
-  --line-soft: #f1f5f9;
-  --rule: #cbd5e1;
-  --bg: #f8fafc;
-  --card: #ffffff;
-  --accent: #facc15;
-  --good-bg: #dcfce7;
-  --good-fg: #15803d;
-  --bad-bg: #fee2e2;
-  --bad-fg: #b91c1c;
+  --ink: #F5F1E8;
+  --body: #A79E8B;
+  --muted: #7C7364;
+  --faint: #6B6252;
+  --line: #2A251C;
+  --line-soft: #221E17;
+  --rule: #3A3328;
+  --bg: #12100C;
+  --card: #1B1813;
+  --accent: #F5C518;
+  --accent-hi: #FFD84A;
+  --good-bg: #16281C;
+  --good-fg: #37A06A;
+  --bad-bg: #2A1714;
+  --bad-fg: #C2553A;
   --shell: 1440px;
-  --pad: 48px;
-  color-scheme: light;
+  --pad: 64px;
+  --gut: 24px;          /* horizontal padding inside a card body */
+  color-scheme: dark;
 }
 
-@media (max-width: 900px) { :root { --pad: 16px; } }
+@media (max-width: 900px) { :root { --pad: 16px; --gut: 16px; } }
 
 * { box-sizing: border-box; }
 
@@ -37,7 +44,7 @@ body {
 }
 
 a { color: var(--ink); text-decoration: none; }
-a:hover { color: #475569; text-decoration: underline; }
+a:hover { color: var(--accent-hi); text-decoration: underline; }
 
 h1, h2, h3 { color: var(--ink); font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 h1 { font-size: 30px; line-height: 1.15; }
@@ -128,105 +135,115 @@ table.data tbody tr:hover { background: var(--bg); }
 }
 
 /* ================= THE BOARD =================
-   Palette taken from the approved design canvas: ink #F5F1E8 on #12100C,
-   gold #F5C518 for the thing to act on, green #37A06A for money in your
-   favour, rust #C2553A for money out of it. Numbers are always tabular so a
-   column of prices lines up and can be read down. */
+   .card has no padding of its own -- full-bleed tables were the point -- so
+   anything that is NOT a table has to carry its own gutter or it runs to the
+   card's edge. That is what pushed the price and the percentage outside the
+   container. */
 
-.pay-up   { color: #37A06A; font-weight: 600; }
-.pay-down { color: #C2553A; font-weight: 600; }
-.pay-flat { color: #7C7364; font-weight: 600; }
-.pay-big  { font-size: 26px; letter-spacing: -0.01em; }
+.pay-up   { color: var(--good-fg); font-weight: 600; }
+.pay-down { color: var(--bad-fg);  font-weight: 600; }
+.pay-flat { color: var(--muted);   font-weight: 600; }
+.pay-big  { font-size: 22px; letter-spacing: -0.01em; }
 
 .tier {
-  font-size: 10.5px; font-weight: 700; letter-spacing: 0.09em;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.09em;
   text-transform: uppercase; padding: 3px 8px; border-radius: 2px;
-  border: 1px solid #3A3328; white-space: nowrap;
+  border: 1px solid var(--rule); white-space: nowrap; color: var(--body);
 }
-.tier-model { color: #12100C; background: #F5C518; border-color: #F5C518; }
-.tier-cons  { color: #A79E8B; background: transparent; }
+.tier-model { color: #12100C; background: var(--accent); border-color: var(--accent); }
 
 .flag {
-  margin-left: 8px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.09em;
+  margin-left: 8px; font-size: 9px; font-weight: 700; letter-spacing: 0.09em;
   padding: 2px 6px; border-radius: 2px; vertical-align: 1px;
 }
-.flag-best  { color: #12100C; background: #F5C518; }
-.flag-worst { color: #C2553A; border: 1px solid #58322A; }
+.flag-best  { color: #12100C; background: var(--accent); }
+.flag-worst { color: var(--bad-fg); border: 1px solid #58322A; }
 
-table.board td.rank, table.board th.rank { width: 26px; color: #4A4335; text-align: right; }
-table.board tr.best  td { background: #1D1C13; }
-table.board tr.worst td { background: #1C1512; }
+table.board td.rank, table.board th.rank {
+  width: 30px; color: var(--faint); text-align: right; padding-left: var(--gut);
+}
+table.board tr.best  td { background: #201C13; }
+table.board tr.worst td { background: #1F1613; }
 
 .match-head {
   display: flex; align-items: flex-end; justify-content: space-between;
-  gap: 20px; padding: 18px 0 22px; border-bottom: 1px solid #2A251C; flex-wrap: wrap;
+  gap: 20px; padding: 18px 0 22px; border-bottom: 1px solid var(--line); flex-wrap: wrap;
 }
 .match-head h1 {
   margin: 0; font-size: 40px; font-weight: 800; letter-spacing: -0.022em; line-height: 1.05;
 }
-.match-head h1 .vs { color: #6B6252; font-weight: 500; }
+.match-head h1 .vs { color: var(--faint); font-weight: 500; }
 .match-head .meta {
   margin-top: 10px; display: flex; gap: 12px; align-items: center;
-  flex-wrap: wrap; font-size: 13.5px; color: #A79E8B;
+  flex-wrap: wrap; font-size: 13.5px; color: var(--body);
 }
 .match-head .meta .dot {
-  width: 3px; height: 3px; background: #4A4335; border-radius: 50%; display: inline-block;
+  width: 3px; height: 3px; background: var(--rule); border-radius: 50%; display: inline-block;
 }
 
 .kicker {
   font-size: 10.5px; font-weight: 700; letter-spacing: 0.15em;
-  text-transform: uppercase; color: #7C7364;
+  text-transform: uppercase; color: var(--muted);
 }
 
-.call { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 0; }
-.call-pick { padding: 4px 28px 4px 0; border-right: 1px solid #2A251C; }
+.call { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); padding: 20px var(--gut); }
+.call-pick { padding-right: 28px; border-right: 1px solid var(--line); min-width: 0; }
 .call-name {
-  margin-top: 8px; font-size: 30px; font-weight: 700; letter-spacing: -0.015em; color: #F5F1E8;
+  margin-top: 8px; font-size: 28px; font-weight: 700; letter-spacing: -0.015em; color: var(--ink);
 }
-.call-price { margin-top: 10px; display: flex; align-items: baseline; gap: 12px; }
-.call-price > .num { font-size: 34px; font-weight: 600; color: #F5C518; }
-.call-at { font-size: 13px; color: #A79E8B; }
-.call-say { margin: 16px 0 0; font-size: 14px; line-height: 1.62; color: #A79E8B; }
-.call-say strong { color: #F5F1E8; font-weight: 600; }
+.call-price { margin-top: 10px; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.call-price > .num { font-size: 32px; font-weight: 600; color: var(--accent); }
+.call-at { font-size: 13px; color: var(--body); }
+.call-say { margin: 16px 0 0; font-size: 14px; line-height: 1.62; color: var(--body); }
+.call-say strong { color: var(--ink); font-weight: 600; }
 
 .call-nums {
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 22px 28px; padding: 4px 0 4px 28px;
+  gap: 20px 28px; padding-left: 28px; min-width: 0;
 }
 .call-nums .big {
-  margin-top: 7px; font-size: 30px; font-weight: 600; letter-spacing: -0.02em; color: #F5F1E8;
+  margin-top: 6px; font-size: 26px; font-weight: 600; letter-spacing: -0.02em; color: var(--ink);
 }
-.call-nums .big span { font-size: 18px; }
-.call-nums .cap { margin-top: 5px; font-size: 12px; line-height: 1.45; color: #7C7364; }
+.call-nums .big span { font-size: 16px; }
+.call-nums .cap { margin-top: 5px; font-size: 12px; line-height: 1.45; color: var(--muted); }
 
-.outcome { padding: 20px 0; border-top: 1px solid #2A251C; }
-.outcome:first-of-type { border-top: 0; padding-top: 4px; }
+.outcome { padding: 18px 0 6px; border-top: 1px solid var(--line); }
+.outcome:first-of-type { border-top: 0; }
 .outcome-head {
-  display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 12px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; margin-bottom: 10px; padding: 0 var(--gut); flex-wrap: wrap;
 }
 .outcome-head h3 {
   margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.008em;
-  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; min-width: 0;
 }
 .outcome-head h3 .mkt {
-  font-size: 11.5px; font-weight: 500; letter-spacing: 0.04em;
-  text-transform: uppercase; color: #7C7364;
+  font-size: 11px; font-weight: 500; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--muted);
 }
 
-.bestworst { margin-bottom: 12px; }
+/* Both references, side by side. Never one of them with the other hidden. */
+.worth {
+  display: flex; gap: 26px; flex-wrap: wrap; padding: 0 var(--gut) 12px;
+  font-size: 13px; color: var(--body);
+}
+.worth b { color: var(--ink); font-weight: 600; }
+.worth .split { display: flex; gap: 8px; align-items: baseline; }
+
+.bestworst { padding: 0 var(--gut); margin-bottom: 10px; }
 .bw-row {
-  display: grid; grid-template-columns: 84px minmax(0, 1fr) 62px 78px;
-  gap: 10px; align-items: baseline; padding: 6px 0;
+  display: grid; grid-template-columns: 80px minmax(0, 1fr) auto auto;
+  gap: 14px; align-items: baseline; padding: 5px 0;
 }
-.bw-key { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #7C7364; }
-.bw-book { font-size: 15px; font-weight: 600; color: #F5F1E8; }
-.bw-price { font-size: 16px; color: #F5F1E8; text-align: right; }
-.bw-row .pay-big { font-size: 19px; text-align: right; }
+.bw-key { font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.bw-book { font-size: 15px; font-weight: 600; color: var(--ink); min-width: 0; }
+.bw-price { font-size: 15px; color: var(--ink); text-align: right; min-width: 54px; }
+.bw-row .pay-big { text-align: right; min-width: 74px; }
 
-@media (max-width: 720px) {
+@media (max-width: 760px) {
   .call { grid-template-columns: minmax(0, 1fr); }
-  .call-pick { border-right: 0; border-bottom: 1px solid #2A251C; padding: 0 0 18px; }
+  .call-pick { border-right: 0; border-bottom: 1px solid var(--line); padding: 0 0 18px; }
   .call-nums { padding: 18px 0 0; }
-  .match-head h1 { font-size: 28px; }
-  .bw-row { grid-template-columns: 72px minmax(0, 1fr) 56px 66px; }
+  .match-head h1 { font-size: 26px; }
+  .pay-big { font-size: 18px; }
 }

@@ -1,15 +1,15 @@
 import type { Metadata } from 'next';
-import { IBM_Plex_Sans, IBM_Plex_Mono } from 'next/font/google';
+import { Archivo, Spline_Sans_Mono } from 'next/font/google';
 import './globals.css';
 import { Header, Footer } from '@/components/Chrome';
 import { dataAsOf } from '@/lib/queries';
 import { kickoff } from '@/lib/fmt';
 
-const sans = IBM_Plex_Sans({
-  subsets: ['latin'], weight: ['400', '500', '600', '700'],
+const sans = Archivo({
+  subsets: ['latin'], weight: ['400', '500', '600', '700', '800'],
   variable: '--font-sans', display: 'swap',
 });
-const mono = IBM_Plex_Mono({
+const mono = Spline_Sans_Mono({
   subsets: ['latin'], weight: ['400', '500', '600'],
   variable: '--font-mono', display: 'swap',
 });
